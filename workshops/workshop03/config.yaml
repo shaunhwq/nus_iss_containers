@@ -1,0 +1,23 @@
+---
+# Create namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: codeserver
+  labels:
+    app: codeserver
+    name: codeserver-ns
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cs-cm
+  namespace: codeserver
+  labels:
+    app: codeserver
+    name: cs-cm
+data:
+  TZ: Asia/Singapore
+  DEFAULT_WORKSPACE: /config/workspace
+  PROXY_DOMAIN: codeserver.167.172.7.74.nip.io

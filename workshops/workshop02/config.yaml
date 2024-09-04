@@ -1,0 +1,22 @@
+---
+# Create namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bggns
+  labels:
+    app: bggapp
+    name: bggns
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bgg-cm
+  namespace: bggns
+  labels:
+    app: bggapp
+    name: bgg-cm
+data:
+  BGG_DB_USER: root
+  BGG_DB_HOST: bggdb-svc.bggns.svc.cluster.local
