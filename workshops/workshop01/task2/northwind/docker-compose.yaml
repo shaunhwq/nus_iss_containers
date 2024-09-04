@@ -1,0 +1,37 @@
+volumes:
+  # docker volume create data-vol
+  data-vol:
+
+networks:
+  # docker network create mynet
+  mynet:
+
+services:
+  # docker run -d --name=mydb --network=mynet --mount type=volume, src=data-vol,dst=/var/lib/mysql \
+  # chukminnlee/mydb:v1
+  mydb:
+    image: mydb
+    build:
+      context: database
+    volumes:
+    - data-vol:/var/lib/mysql
+    networks:
+    - mynet
+
+  # docker run -d -p 8000-9000:3000 --network=mynet \
+  # -e DB_HOST=mydb -e DB_USER=root -e DB_PASSWORD=changeit \
+  # chukmunnnlee/myapp:v1
+  myapp:
+    image: myapp
+    build:
+      context: server
+    environment:
+    - DB_HOST=mydb
+    - DB_USER=root
+    - DB_PASSWORD=changeit
+    networks:
+    - mynet
+    ports:
+    - 8000-9000:3000
+    depends_on:
+    - mydb  # Not confirm will create in order
