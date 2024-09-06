@@ -37,6 +37,10 @@ spec:
         - name: workspace-vol
           mountPath: /config/workspace
           
+        resources:
+          requests:
+            cpu: 200m  # 1000 = 1 vcpu
+            memory: 256Mi
         env:
         # Pull from config map
         - name: TZ
