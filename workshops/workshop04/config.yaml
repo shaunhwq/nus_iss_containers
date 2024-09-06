@@ -1,0 +1,28 @@
+---
+# Create namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minions
+  labels:
+    app: minio
+    name: minions
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-cm
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-cm
+data:
+  # Minio env vars
+  MINIO_ROOT_USER: minioadmin
+  MINIO_DATA_DIR: /data
+  MINIO_DISTRIBUTED_MODE_ENABLED: "yes"
+  MINIO_DISTRIBUTED_NODES: minio-sts-{0...3}.minio-hsvc.minions.svc.cluster.local/data
+  MINIO_API_PORT_NUMBER: "9000"
+  MINIO_CONSOLE_PORT_NUMBER: "9090"
+  BITNAMI_DEBUG: "true"

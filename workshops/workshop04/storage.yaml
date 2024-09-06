@@ -1,0 +1,137 @@
+#/minio/health/ready
+#/minio/health/live
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-hsvc
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-hsvc
+spec:
+  clusterIP: None
+  selector:
+    app: minio
+    name: minio-pod
+  ports:
+  - port: 9000
+    targetPort: 9000
+    name: data
+  - port: 9090
+    targetPort: 9090
+    name: console
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio-sts
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-sts
+spec:
+  replicas: 4
+
+  # Only for headless service (for stateful services)
+  serviceName: minio-hsvc
+
+  selector:
+    matchLabels:
+      app: minio
+      name: minio-pod
+    
+  # Provision a storage for each
+  volumeClaimTemplates:
+  - metadata:
+      name: data-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: do-block-storage
+      resources:
+        requests:
+          storage: 1Gi
+
+  template:
+    metadata:
+      namespace: minions
+      labels:
+        app: minio
+        name: minio-pod
+    spec:
+      securityContext:
+        fsGroup: 1001
+
+      containers:
+      - name: minio-container
+        image: bitnami/minio:2024.8.29
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: minio-cm
+        - secretRef:
+            name: minio-secret
+        ports:
+        - name: data
+          containerPort: 9000
+        - name: console
+          containerPort: 9090
+        volumeMounts:
+        - name: data-vol
+          mountPath: /data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-svc
+  namespace: minions
+  labels:
+    app: minio
+    name: minio-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: minio
+    name: minio-pod
+  ports:
+  - name: data
+    port: 9000
+    targetPort: 9000
+  - name: console
+    port: 9090
+    targetPort: 9090
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-ingress
+  labels:
+    app: minio
+    name: minio-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: data.167.172.7.74.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-svc
+            port:
+              number: 9000
+  - host: console.167.172.7.74.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-svc
+            port:
+              number: 9090
