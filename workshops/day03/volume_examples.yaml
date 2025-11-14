@@ -1,0 +1,140 @@
+# @@@@@@@@@@@@@@@@@@@@@@@@
+
+# @@@@@@@@@@@@@@@@@@@@@@@@
+  
+  # Create volume outside of container. Never do this because data will be stored on the node itself
+  # 1. Bind mounts do not self cleanup
+  # 2. If 2 pods scheduled on the same node then will have overwrite
+  # 3. Security breach. Another pod can be created and it can access all the date
+  # 4. Just enough storage only for the node. Node will die if memory is filled up
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-po
+  namespace: default
+
+spec:
+  volumes:
+  - name: data-vol
+    hostPath:
+      path: /opt/data
+      type: DirectoryOrCreate
+
+  containers:
+  - name: mysql-container
+    image: mysql:8
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: changeit
+    ports:
+    - containerPort: 3306
+    volumeMounts:
+    # This is like a bind mount
+    - name: data-vol
+      mountPath: /var/lib/mysql
+    resources: {}
+
+# @@@@@@@@@@@@@@@@@@@@@@@@
+# Sharing of data
+# @@@@@@@@@@@@@@@@@@@@@@@@
+
+
+# Instead can do this for inter-container sharing of data
+# One is writing something one is picking up
+# Need to make sure that you dont write too much cos the node might die
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-po
+  namespace: default
+
+spec:
+  volumes:
+  - name: data-vol
+    hostPath:
+      # Changed this to emptyDir
+      emptyDir: {}
+
+  containers:
+  # Now, both can access the same memory
+  - name: test
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: data-vol
+      mountPath: /opt/tmp
+    resource: {}
+
+  - name: mysql-container
+    image: mysql:8
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: changeit
+    ports:
+    - containerPort: 3306
+    volumeMounts:
+    # This is like a bind mount
+    - name: data-vol
+      mountPath: /var/lib/mysql
+    resources: {}
+
+---
+
+
+
+
+
+
+
+
+
+
+
+# @@@@@@@@@@@@@@@@@@@@@@@@
+# Mounting secrets and config maps example
+# @@@@@@@@@@@@@@@@@@@@@@@@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: default
+data:
+  readme.txt: |
+    hello, world
+    hello, world
+    hello, world
+  values.yaml: |
+    controller:
+      image:
+        image: fred/myimage
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-po
+  namespace: default
+
+spec:
+  volumes:
+  - name: config-vol
+    configMap:
+      name: config
+
+  containers:
+  - name: mysql-container
+    image: mysql:8
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: changeit
+    ports:
+    - containerPort: 3306
+    volumeMounts:
+    # This is like a bind mount
+    - name: config-vol
+      mountPath: /opt/config
+      readOnly: true  # Mount it as readOnly because its a config and not meant to be changed
+    resources: {}

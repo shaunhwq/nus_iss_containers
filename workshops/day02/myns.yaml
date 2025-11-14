@@ -1,0 +1,37 @@
+# Order of creation is important
+
+---
+# Create namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: myns
+
+---
+# Create pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+  namespace: myns
+#label:
+  # any label can work
+  # can search
+ # app: myapp
+  #dept: htx
+  #commit: asdasd
+spec:
+  containers:
+  # an array of containers, names must be unique
+  - name: mypod-container
+    image: chukmunnlee/dov-bear:v5
+    # an alternative is
+    # image: chukmunnlee/dov-bear@sha256:.......
+    imagePullPolicy: IfNotPresent
+    ports:  # container port
+      - containerPort: 3000
+    env:
+      - name: INSTANCE_NAME
+        value: my first pod
+      - name: INSTANCE_HASH
+        value: abc123

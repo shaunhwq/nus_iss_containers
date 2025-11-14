@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base
+
+labels:
+- pairs:
+    # adds env: prod to every label
+    env: prod
+  includeSelectors: true
+  includeTemplates: true
+
+namePrefix: prod-
+namespace: prod-ns
+
+# Change stuff accordingly
+replicas:
+- name: dov-deploy
+  count: 3
+
+images:
+- name: chukmunlee/dov-bear
+  newTag: v5-prod
+
+# will generate a config map accordingly
+configMapGenerator:
+- name: dov-cm
+  behaviour: create
+  literals:
+  - INSTANCE_NAME=prod-version
+  files:
+  - config.cnf=config.cnf
+
+# Cannot patch a resource twice
+# all changes to a resource must be in a single file
+patches:
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: dov-deploy
+  path: patch.yaml
+- target:
+    group: networking.k8s.io/v1
+    version: v1
+    kind: Ingress
+    name: dov-deploy
+  path: patch.yaml
